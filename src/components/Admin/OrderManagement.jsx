@@ -186,7 +186,7 @@ const OrderManagement = () => {
                   <div className="mt-2">
                     <span className="text-lg font-bold text-amber-600">₱{order.total}</span>
                     <span className="text-sm text-gray-600 ml-2">
-                      via {order.paymentMethod.toUpperCase()}
+                      via {(order.paymentMethod ? order.paymentMethod.toUpperCase() : 'N/A')}
                     </span>
                   </div>
                 </div>

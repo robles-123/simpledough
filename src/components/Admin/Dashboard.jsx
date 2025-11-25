@@ -179,7 +179,7 @@ const Dashboard = () => {
                               Order #{order.id.slice(-6)}
                             </p>
                             <p className="text-sm text-gray-600">
-                              {order.items.length} items • {order.paymentMethod.toUpperCase()}
+                              {order.items.length} items • {(order.paymentMethod ? order.paymentMethod.toUpperCase() : 'N/A')}
                             </p>
                             <p className="text-xs text-gray-500">
                               {new Date(order.createdAt).toLocaleDateString()}
