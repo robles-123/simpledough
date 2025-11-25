@@ -31,8 +31,17 @@ If you want, I can also wire order persistence into Supabase and migrate existin
 
 SQL to create a simple `orders` table in Supabase
 
+- Quick note: when running these statements in the Supabase SQL editor, do NOT include any surrounding Markdown code-fence markers (the ```` ```sql ```` and closing ```` ``` ````). Paste only the raw SQL. To make this easy, a raw SQL file is included at `supabase/create_orders_table.sql`.
+
+If you prefer to paste directly into the SQL editor, copy the contents of `supabase/create_orders_table.sql` (no fences) and run them. The file includes enabling `pgcrypto` (for `gen_random_uuid()`), table creation, RLS enablement, and a sample insert policy for authenticated users.
+
+Contents of `supabase/create_orders_table.sql` (already included in the repo):
+
 ```sql
--- Run this in the SQL editor in the Supabase dashboard
+-- Enable pgcrypto to use gen_random_uuid()
+create extension if not exists pgcrypto;
+
+-- Create orders table
 create table if not exists public.orders (
 	id uuid primary key default gen_random_uuid(),
 	user_id uuid references auth.users(id),
@@ -44,10 +53,10 @@ create table if not exists public.orders (
 	created_at timestamptz default now()
 );
 
--- Optional: enable Row Level Security and allow authenticated users to insert their own orders
+-- Enable Row Level Security
 alter table public.orders enable row level security;
 
--- Example policy to allow inserts for authenticated users
+-- Policy: allow inserts for authenticated users
 create policy "allow insert for authenticated users" on public.orders
 for insert
 using (auth.role() = 'authenticated')
