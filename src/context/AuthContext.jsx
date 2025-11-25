@@ -16,6 +16,27 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [orderHistory, setOrderHistory] = useState([]); // ✅ Added order history state
 
+  // Helper to check if user is admin in database
+  const checkIsAdmin = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.warn('Error checking admin role:', error);
+        return false;
+      }
+      return !!data;
+    } catch (err) {
+      console.warn('Error checking admin role:', err);
+      return false;
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -26,11 +47,13 @@ export const AuthProvider = ({ children }) => {
         const sessionUser = data?.session?.user ?? null;
 
         if (sessionUser && mounted) {
+          const isAdmin = await checkIsAdmin(sessionUser.id);
+
           const profile = {
             id: sessionUser.id,
             email: sessionUser.email,
             name: sessionUser.user_metadata?.name || sessionUser.email,
-            role: sessionUser.user_metadata?.role || 'customer',
+            role: isAdmin ? 'admin' : (sessionUser.user_metadata?.role || 'customer'),
             phone: sessionUser.user_metadata?.phone || '',
             address: sessionUser.user_metadata?.address || '',
           };
@@ -58,18 +81,21 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setOrderHistory([]);
       } else {
-        const profile = {
-          id: sessionUser.id,
-          email: sessionUser.email,
-          name: sessionUser.user_metadata?.name || sessionUser.email,
-          role: sessionUser.user_metadata?.role || 'customer',
-          phone: sessionUser.user_metadata?.phone || '',
-          address: sessionUser.user_metadata?.address || '',
-        };
-        setUser(profile);
-        const allOrders = JSON.parse(localStorage.getItem('simple-dough-orders')) || [];
-        const userOrders = allOrders.filter((order) => order.userId === profile.id);
-        setOrderHistory(userOrders);
+        (async () => {
+          const isAdmin = await checkIsAdmin(sessionUser.id);
+          const profile = {
+            id: sessionUser.id,
+            email: sessionUser.email,
+            name: sessionUser.user_metadata?.name || sessionUser.email,
+            role: isAdmin ? 'admin' : (sessionUser.user_metadata?.role || 'customer'),
+            phone: sessionUser.user_metadata?.phone || '',
+            address: sessionUser.user_metadata?.address || '',
+          };
+          if (mounted) setUser(profile);
+          const allOrders = JSON.parse(localStorage.getItem('simple-dough-orders')) || [];
+          const userOrders = allOrders.filter((order) => order.userId === profile.id);
+          if (mounted) setOrderHistory(userOrders);
+        })();
       }
     });
 
